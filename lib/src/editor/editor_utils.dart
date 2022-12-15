@@ -29,16 +29,43 @@ class EditActionDetails {
   double? originalAspectRatio;
 
   ///  aspect ratio of crop rect
-  double? _cropAspectRatio;
-  double? get cropAspectRatio {
-    if (_cropAspectRatio != null) {
-      return isHalfPi ? 1.0 / _cropAspectRatio! : _cropAspectRatio;
+  double? _initialCropAspectRatio;
+
+  double? _maxCropAspectRatio;
+
+  double? _minCropAspectRatio;
+
+  double? get initialCropAspectRatio {
+    if (_initialCropAspectRatio != null) {
+      return isHalfPi ? 1.0 / _initialCropAspectRatio! : _initialCropAspectRatio;
     }
     return null;
   }
 
-  set cropAspectRatio(double? value) {
-    _cropAspectRatio = value;
+  set initialCropAspectRatio(double? value) {
+    _initialCropAspectRatio = value;
+  }
+
+  double? get maxCropAspectRatio {
+    if (_maxCropAspectRatio != null) {
+      return isHalfPi ? 1.0 / _maxCropAspectRatio! : _maxCropAspectRatio;
+    }
+    return null;
+  }
+
+  set maxCropAspectRatio(double? value) {
+    _maxCropAspectRatio = value;
+  }
+
+  double? get minCropAspectRatio {
+    if (_minCropAspectRatio != null) {
+      return isHalfPi ? 1.0 / _minCropAspectRatio! : _minCropAspectRatio;
+    }
+    return null;
+  }
+
+  set minCropAspectRatio(double? value) {
+    _minCropAspectRatio = value;
   }
 
   ///image
@@ -376,7 +403,8 @@ class EditorConfig {
     this.hitTestSize = 20.0,
     this.animationDuration = const Duration(milliseconds: 200),
     this.tickerDuration = const Duration(milliseconds: 400),
-    this.cropAspectRatio = CropAspectRatios.custom,
+    this.maxCropAspectRatio = CropAspectRatios.custom,
+    this.minCropAspectRatio = CropAspectRatios.custom,
     this.initialCropAspectRatio = CropAspectRatios.custom,
     this.initCropRectType = InitCropRectType.imageRect,
     this.cropLayerPainter = const EditorCropLayerPainter(),
@@ -387,7 +415,11 @@ class EditorConfig {
   })  : assert(lineHeight > 0.0),
         assert(hitTestSize >= 0.0),
         assert(maxScale > 0.0),
-        assert(speed > 0.0);
+        assert(speed > 0.0),
+        assert((maxCropAspectRatio != null &&
+                minCropAspectRatio != null &&
+                maxCropAspectRatio >= minCropAspectRatio) ||
+            (maxCropAspectRatio == null && minCropAspectRatio == null));
 
   /// Call when EditActionDetails is changed
   final EditActionDetailsIsChanged? editActionDetailsIsChanged;
@@ -434,7 +466,9 @@ class EditorConfig {
   ///
   /// Typically the aspect ratio will not be changed during the editing process,
   /// but it might be relevant with states (e.g. [ExtendedImageState]).
-  final double? cropAspectRatio;
+  final double? maxCropAspectRatio;
+
+  final double? minCropAspectRatio;
 
   /// Initial Aspect ratio of crop rect
   /// default is custom
@@ -457,6 +491,8 @@ class EditorConfig {
   /// true: zoom int => up, zoom out => down
   /// default is false
   final bool reverseMousePointerScrollDirection;
+
+// double? get cropAspectRatio => maxCropAspectRatio ?? minCropAspectRatio;
 }
 
 class CropAspectRatios {

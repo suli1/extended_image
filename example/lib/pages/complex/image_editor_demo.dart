@@ -93,7 +93,8 @@ class _ImageEditorDemoState extends State<ImageEditorDemo> {
                       hitTestSize: 20.0,
                       cropLayerPainter: _cropLayerPainter!,
                       initCropRectType: InitCropRectType.imageRect,
-                      cropAspectRatio: _aspectRatio!.value,
+                      maxCropAspectRatio: _aspectRatio!.value,
+                      minCropAspectRatio: _aspectRatio!.value,
                     );
                   },
                   cacheRawData: true,
@@ -111,7 +112,8 @@ class _ImageEditorDemoState extends State<ImageEditorDemo> {
                       hitTestSize: 20.0,
                       cropLayerPainter: _cropLayerPainter!,
                       initCropRectType: InitCropRectType.imageRect,
-                      cropAspectRatio: _aspectRatio!.value,
+                      maxCropAspectRatio: _aspectRatio!.value,
+                      minCropAspectRatio: _aspectRatio!.value,
                     );
                   },
                   cacheRawData: true,
