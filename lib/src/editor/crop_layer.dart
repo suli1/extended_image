@@ -333,17 +333,14 @@ class ExtendedImageCropLayerState extends State<ExtendedImageCropLayer>
         Offset(min(result.right, layerDestinationRect.right),
             min(result.bottom, layerDestinationRect.bottom)));
 
-    result = _handleAspectRatio(
-        gWidth, moveType, result, layerDestinationRect, delta);
+    result = _handleAspectRatio(gWidth, moveType, result, layerDestinationRect, delta);
 
-    ///move and scale image rect when crop rect is bigger than layout rect
-
+    // move and scale image rect when crop rect is bigger than layout rect
     if (result.beyond(layoutRect)) {
       cropRect = result;
-      final Rect centerCropRect = getDestinationRect(
-          rect: layoutRect, inputSize: result.size, fit: widget.fit);
-      final Rect newScreenCropRect =
-          centerCropRect.shift(widget.editActionDetails.layoutTopLeft!);
+      final Rect centerCropRect =
+          getDestinationRect(rect: layoutRect, inputSize: result.size, fit: widget.fit);
+      final Rect newScreenCropRect = centerCropRect.shift(widget.editActionDetails.layoutTopLeft!);
       _doCropAutoCenterAnimation(newScreenCropRect: newScreenCropRect);
     } else {
       result = _doWithMaxScale(result);
@@ -359,23 +356,25 @@ class ExtendedImageCropLayerState extends State<ExtendedImageCropLayer>
   /// handle crop rect with aspectRatio
   Rect _handleAspectRatio(double gWidth, _MoveType moveType, Rect result,
       Rect? layerDestinationRect, Offset delta) {
-    final double? aspectRatio = widget.editActionDetails.cropAspectRatio;
+    final double? maxAspectRatio = widget.editActionDetails.maxCropAspectRatio;
+    final double? minAspectRatio = widget.editActionDetails.minCropAspectRatio;
     // do with aspect ratio
-    if (aspectRatio != null) {
+    if (maxAspectRatio != null && minAspectRatio != null) {
+      // final double aspectRatio = maxAspectRatio;
       final double minD = gWidth * 2;
       switch (moveType) {
         case _MoveType.top:
         case _MoveType.bottom:
           final bool isTop = moveType == _MoveType.top;
           result = _doAspectRatioV(
-              minD, result, aspectRatio, layerDestinationRect!,
+              minD, result, maxAspectRatio, minAspectRatio, layerDestinationRect!,
               isTop: isTop);
           break;
         case _MoveType.left:
         case _MoveType.right:
           final bool isLeft = moveType == _MoveType.left;
           result = _doAspectRatioH(
-              minD, result, aspectRatio, layerDestinationRect!,
+              minD, result, maxAspectRatio, minAspectRatio, layerDestinationRect!,
               isLeft: isLeft);
           break;
         case _MoveType.topLeft:
@@ -386,13 +385,13 @@ class ExtendedImageCropLayerState extends State<ExtendedImageCropLayer>
           final double dy = delta.dy.abs();
           double width = result.width;
           double height = result.height;
+          // 保持比例不变
+          final double aspectRatio = cropRect!.width / cropRect!.height;
           if (dx.greaterThanOrEqualTo(dy)) {
-            height = max(minD,
-                min(result.width / aspectRatio, layerDestinationRect!.height));
+            height = max(minD, min(result.width / aspectRatio, layerDestinationRect!.height));
             width = height * aspectRatio;
           } else {
-            width = max(minD,
-                min(result.height * aspectRatio, layerDestinationRect!.width));
+            width = max(minD, min(result.height * aspectRatio, layerDestinationRect!.width));
             height = width / aspectRatio;
           }
           double top = result.top;
@@ -426,35 +425,68 @@ class ExtendedImageCropLayerState extends State<ExtendedImageCropLayer>
 
   ///horizontal
   Rect _doAspectRatioH(
-      double minD, Rect result, double aspectRatio, Rect layerDestinationRect,
-      {required bool isLeft}) {
-    final double height =
-        max(minD, min(result.width / aspectRatio, layerDestinationRect.height));
-    final double width = height * aspectRatio;
-    final double left = isLeft ? result.right - width : result.left;
-    final double top = result.centerRight.dy - height / 2.0;
-    result = Rect.fromLTWH(left, top, width, height);
+    double minD,
+    Rect result,
+    double maxAspectRatio,
+    double minAspectRatio,
+    Rect layerDestinationRect, {
+    required bool isLeft,
+  }) {
+    if (maxAspectRatio == minAspectRatio) {
+      // 调整高度，保证尺寸不变
+      final double aspectRatio = maxAspectRatio;
+      final double height = max(minD, min(result.width / aspectRatio, layerDestinationRect.height));
+      final double width = height * aspectRatio;
+      final double left = isLeft ? result.right - width : result.left;
+      final double top = result.centerRight.dy - height / 2.0;
+      result = Rect.fromLTWH(left, top, width, height);
+    } else {
+      // 保证宽度在尺寸范围内
+      final double maxWidth = result.height * maxAspectRatio;
+      final double minWidth = result.height * minAspectRatio;
+      final double width = max(minD, result.width.clamp(minWidth, maxWidth));
+      final double height = result.height;
+      final double left = isLeft ? result.right - width : result.left;
+      final double top = result.top;
+      result = Rect.fromLTWH(left, top, width, height);
+    }
     return result;
   }
 
   ///vertical
   Rect _doAspectRatioV(
-      double minD, Rect result, double aspectRatio, Rect layerDestinationRect,
-      {required bool isTop}) {
-    final double width =
-        max(minD, min(result.height * aspectRatio, layerDestinationRect.width));
-    final double height = width / aspectRatio;
-    final double top = isTop ? result.bottom - height : result.top;
-    final double left = result.topCenter.dx - width / 2.0;
-    result = Rect.fromLTWH(left, top, width, height);
+    double minD,
+    Rect result,
+    double maxAspectRatio,
+    double minAspectRatio,
+    Rect layerDestinationRect, {
+    required bool isTop,
+  }) {
+    if (maxAspectRatio == minAspectRatio) {
+      final double aspectRatio = maxAspectRatio;
+      // 调整宽度，保证尺寸不变
+      final double width = max(minD, min(result.height * aspectRatio, layerDestinationRect.width));
+      final double height = width / aspectRatio;
+      final double top = isTop ? result.bottom - height : result.top;
+      final double left = result.topCenter.dx - width / 2.0;
+      result = Rect.fromLTWH(left, top, width, height);
+    } else {
+      // 保证高度在尺寸范围内
+      final double minHeight = result.width / maxAspectRatio;
+      final double maxHeight = result.width / minAspectRatio;
+      final double height = max(minD, result.height.clamp(minHeight, maxHeight));
+      final double width = result.width;
+      final double top = isTop ? result.bottom - height : result.top;
+      final double left = result.left;
+      result = Rect.fromLTWH(left, top, width, height);
+    }
     return result;
   }
 
   Rect? _doWithMaxScale(Rect rect) {
-    final Rect centerCropRect = getDestinationRect(
-        rect: layoutRect, inputSize: rect.size, fit: widget.fit);
-    final Rect newScreenCropRect =
-        centerCropRect.shift(widget.editActionDetails.layoutTopLeft!);
+    final Rect centerCropRect =
+        getDestinationRect(rect: layoutRect, inputSize: rect.size, fit: widget.fit);
+    final Rect newScreenCropRect = centerCropRect.shift(widget.editActionDetails.layoutTopLeft!);
 
     final Rect oldScreenCropRect = widget.editActionDetails.screenCropRect!;
 
@@ -462,8 +494,7 @@ class ExtendedImageCropLayerState extends State<ExtendedImageCropLayer>
 
     final double totalScale = widget.editActionDetails.totalScale * scale;
     if (totalScale.greaterThan(widget.editorConfig.maxScale)) {
-      if (rect.width.greaterThan(cropRect!.width) ||
-          rect.height.greaterThan(cropRect!.height)) {
+      if (rect.width.greaterThan(cropRect!.width) || rect.height.greaterThan(cropRect!.height)) {
         return rect;
       }
       return null;

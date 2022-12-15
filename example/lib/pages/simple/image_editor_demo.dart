@@ -45,7 +45,10 @@ class _SimpleImageEditorState extends State<SimpleImageEditor> {
               cropRectPadding: const EdgeInsets.all(20.0),
               hitTestSize: 20.0,
               initCropRectType: InitCropRectType.imageRect,
-              cropAspectRatio: CropAspectRatios.ratio4_3,
+              // cropAspectRatio: CropAspectRatios.custom,
+              maxCropAspectRatio: 2,
+              minCropAspectRatio: 1 / 2,
+              initialCropAspectRatio: 2,
               editActionDetailsIsChanged: (EditActionDetails? details) {
                 //print(details?.totalScale);
               });
