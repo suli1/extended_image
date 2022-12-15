@@ -42,13 +42,12 @@ class ExtendedImageEditorState extends State<ExtendedImageEditor> {
   }
 
   void _initGestureConfig() {
-    final double? cropAspectRatio = _editorConfig?.cropAspectRatio;
-    _editorConfig = widget
-            .extendedImageState.imageWidget.initEditorConfigHandler
+    final double? cropAspectRatio = _editorConfig?.initialCropAspectRatio;
+    _editorConfig = widget.extendedImageState.imageWidget.initEditorConfigHandler
             ?.call(widget.extendedImageState) ??
         EditorConfig();
 
-    if (cropAspectRatio != _editorConfig!.cropAspectRatio) {
+    if (cropAspectRatio != _editorConfig!.initialCropAspectRatio) {
       _editActionDetails = null;
     }
 
@@ -63,12 +62,14 @@ class ExtendedImageEditorState extends State<ExtendedImageEditor> {
           widget.extendedImageState.extendedImageInfo!.image.width /
               widget.extendedImageState.extendedImageInfo!.image.height;
     }
-    _editActionDetails!.cropAspectRatio = _editorConfig!.cropAspectRatio;
+    _editActionDetails!.minCropAspectRatio = _editorConfig!.minCropAspectRatio;
+    _editActionDetails!.maxCropAspectRatio = _editorConfig!.maxCropAspectRatio;
 
-    if (_editorConfig!.cropAspectRatio != null &&
-        _editorConfig!.cropAspectRatio! <= 0) {
-      _editActionDetails!.cropAspectRatio =
-          _editActionDetails!.originalAspectRatio;
+    if (_editorConfig!.initialCropAspectRatio == null ||
+        _editorConfig!.initialCropAspectRatio! <= 0) {
+      _editActionDetails!.initialCropAspectRatio = _editActionDetails!.originalAspectRatio;
+    } else {
+      _editActionDetails!.initialCropAspectRatio = _editorConfig!.initialCropAspectRatio;
     }
   }
 
@@ -132,31 +133,23 @@ class ExtendedImageEditorState extends State<ExtendedImageEditor> {
                   final Rect destinationRect = getDestinationRect(
                       rect: layoutRect,
                       inputSize: Size(
-                          widget
-                              .extendedImageState.extendedImageInfo!.image.width
-                              .toDouble(),
-                          widget.extendedImageState.extendedImageInfo!.image
-                              .height
-                              .toDouble()),
+                          widget.extendedImageState.extendedImageInfo!.image.width.toDouble(),
+                          widget.extendedImageState.extendedImageInfo!.image.height.toDouble()),
                       flipHorizontally: false,
                       fit: widget.extendedImageState.imageWidget.fit,
-                      centerSlice:
-                          widget.extendedImageState.imageWidget.centerSlice,
+                      centerSlice: widget.extendedImageState.imageWidget.centerSlice,
                       alignment: resolvedAlignment,
-                      scale:
-                          widget.extendedImageState.extendedImageInfo!.scale);
+                      scale: widget.extendedImageState.extendedImageInfo!.scale);
 
                   Rect cropRect = _initCropRect(destinationRect);
-                  if (_editorConfig!.initCropRectType ==
-                          InitCropRectType.layoutRect &&
-                      _editorConfig!.cropAspectRatio != null &&
-                      _editorConfig!.cropAspectRatio! > 0) {
+                  if (_editorConfig!.initCropRectType == InitCropRectType.layoutRect &&
+                      _editorConfig!.maxCropAspectRatio != null &&
+                      _editorConfig!.minCropAspectRatio != null) {
                     final Rect rect = _initCropRect(layoutRect);
-                    _editActionDetails!.totalScale = _editActionDetails!
-                        .preTotalScale = destinationRect.width
-                            .greaterThan(destinationRect.height)
-                        ? rect.height / cropRect.height
-                        : rect.width / cropRect.width;
+                    _editActionDetails!.totalScale = _editActionDetails!.preTotalScale =
+                        destinationRect.width.greaterThan(destinationRect.height)
+                            ? rect.height / cropRect.height
+                            : rect.width / cropRect.width;
                     cropRect = rect;
                   }
                   _editActionDetails!.cropRect = cropRect;
@@ -191,10 +184,10 @@ class ExtendedImageEditorState extends State<ExtendedImageEditor> {
   }
 
   Rect _initCropRect(Rect rect) {
-    if (_editActionDetails!.cropAspectRatio != null) {
+    if (_editActionDetails!.initialCropAspectRatio != null) {
       return _calculateCropRectFromAspectRatio(
         rect,
-        _editActionDetails!.cropAspectRatio!,
+        _editActionDetails!.initialCropAspectRatio!,
       );
     }
     if (_editorConfig!.initialCropAspectRatio != null) {
